@@ -1,12 +1,9 @@
-<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System Recovery Dashboard</title>
+    <title>Autonomous System Recovery</title>
     <style>
-        /* General Styles */
         body {
             font-family: 'Arial', sans-serif;
             background-color: #f4f4f9;
@@ -14,15 +11,10 @@
             margin: 0;
             padding: 0;
         }
-
-        /* Header Styling */
         h1 {
             color: #333;
             margin-top: 50px;
-            font-size: 2rem;
         }
-
-        /* Button Styling */
         button {
             background-color: #007bff;
             color: white;
@@ -34,17 +26,20 @@
             transition: all 0.3s ease-in-out;
             margin-top: 20px;
         }
-
         button:hover {
             background-color: #0056b3;
             transform: scale(1.05);
         }
-
-        /* Status Message */
         #status {
             margin-top: 20px;
             font-size: 1.2rem;
             color: #28a745;
+            font-weight: bold;
+        }
+        #recovery-status {
+            margin-top: 20px;
+            font-size: 1.1rem;
+            color: #ff6600;
             font-weight: bold;
         }
     </style>
@@ -52,6 +47,17 @@
 <body>
 <h1>Autonomous System Recovery</h1>
 <p>System Status: <span id="status">Monitoring...</span></p>
+
+<button id="recover-btn">Trigger Recovery</button>
+<p id="recover-result" style="font-weight: bold;"></p>
+
+<!-- ✅ Recovery Status Section -->
+<h2>Recovery Status</h2>
+<p id="recovery-status">Loading...</p>
+
+<!-- ✅ Live CPU Usage -->
+<h2>Live CPU Usage</h2>
+<canvas id="cpuChart" width="300" height="300" style="margin-top: 20px;"></canvas>
 
 <h2>Recent Anomalies</h2>
 <ul id="anomalies">
@@ -62,5 +68,62 @@
 
 <h2>Logs</h2>
 <a href="/logs">View Logs</a>
+
+<!-- ✅ Scripts -->
+<script>
+    // Recovery button
+    document.getElementById("recover-btn").addEventListener("click", function () {
+        fetch("/recover")
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById("recover-result").innerText = data;
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                document.getElementById("recover-result").innerText = "Something went wrong.";
+            });
+    });
+
+    // Recovery status fetch
+    function fetchRecoveryStatus() {
+        fetch("/status")
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("recovery-status").innerText =
+                    `Last Triggered: ${data.last_triggered} | Status: ${data.status}`;
+            });
+    }
+
+    setInterval(fetchRecoveryStatus, 5000);
+    fetchRecoveryStatus();  // Initial call
+</script>
+
+<!-- ✅ Chart.js and CPU monitoring -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const ctx = document.getElementById("cpuChart").getContext("2d");
+    const cpuChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ["CPU Usage", "Idle"],
+            datasets: [{
+                data: [0, 100],
+                backgroundColor: ["#FF6384", "#DDDDDD"]
+            }]
+        }
+    });
+
+    function updateCpuChart() {
+        fetch("/cpu")
+            .then(res => res.json())
+            .then(data => {
+                cpuChart.data.datasets[0].data = [data.cpu, 100 - data.cpu];
+                cpuChart.update();
+            });
+    }
+
+    setInterval(updateCpuChart, 5000);
+    updateCpuChart(); // Initial call
+</script>
 </body>
 </html>
