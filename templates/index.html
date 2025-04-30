@@ -55,9 +55,18 @@
 <h2>Recovery Status</h2>
 <p id="recovery-status">Loading...</p>
 
-<!-- ✅ Live CPU Usage -->
-<h2>Live CPU Usage</h2>
-<canvas id="cpuChart" width="300" height="300" style="margin-top: 20px;"></canvas>
+<!-- ✅ Live System Usage Section -->
+<h2>Live System Usage</h2>
+<div style="display: flex; justify-content: center; gap: 50px; flex-wrap: wrap; margin-top: 20px;">
+    <div>
+        <canvas id="cpuChart" width="250" height="250"></canvas>
+        <p><strong>CPU Usage</strong></p>
+    </div>
+    <div>
+        <canvas id="memoryChart" width="250" height="250"></canvas>
+        <p><strong>Memory Usage</strong></p>
+    </div>
+</div>
 
 <h2>Recent Anomalies</h2>
 <ul id="anomalies">
@@ -69,9 +78,8 @@
 <h2>Logs</h2>
 <a href="/logs">View Logs</a>
 
-<!-- ✅ Scripts -->
+<!-- ✅ Button Function -->
 <script>
-    // Recovery button
     document.getElementById("recover-btn").addEventListener("click", function () {
         fetch("/recover")
             .then(response => response.text())
@@ -84,7 +92,6 @@
             });
     });
 
-    // Recovery status fetch
     function fetchRecoveryStatus() {
         fetch("/status")
             .then(response => response.json())
@@ -95,17 +102,19 @@
     }
 
     setInterval(fetchRecoveryStatus, 5000);
-    fetchRecoveryStatus();  // Initial call
+    fetchRecoveryStatus();  // Initial load
 </script>
 
-<!-- ✅ Chart.js and CPU monitoring -->
+<!-- ✅ Chart.js and Usage Monitoring -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    const ctx = document.getElementById("cpuChart").getContext("2d");
-    const cpuChart = new Chart(ctx, {
+    const cpuCtx = document.getElementById("cpuChart").getContext("2d");
+    const memoryCtx = document.getElementById("memoryChart").getContext("2d");
+
+    const cpuChart = new Chart(cpuCtx, {
         type: 'doughnut',
         data: {
-            labels: ["CPU Usage", "Idle"],
+            labels: ["Used", "Idle"],
             datasets: [{
                 data: [0, 100],
                 backgroundColor: ["#FF6384", "#DDDDDD"]
@@ -113,17 +122,35 @@
         }
     });
 
-    function updateCpuChart() {
+    const memoryChart = new Chart(memoryCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ["Used", "Free"],
+            datasets: [{
+                data: [0, 100],
+                backgroundColor: ["#36A2EB", "#DDDDDD"]
+            }]
+        }
+    });
+
+    function updateCharts() {
         fetch("/cpu")
             .then(res => res.json())
             .then(data => {
                 cpuChart.data.datasets[0].data = [data.cpu, 100 - data.cpu];
                 cpuChart.update();
             });
+
+        fetch("/memory")
+            .then(res => res.json())
+            .then(data => {
+                memoryChart.data.datasets[0].data = [data.memory, 100 - data.memory];
+                memoryChart.update();
+            });
     }
 
-    setInterval(updateCpuChart, 5000);
-    updateCpuChart(); // Initial call
+    setInterval(updateCharts, 5000);
+    updateCharts(); // Initial load
 </script>
 </body>
 </html>
